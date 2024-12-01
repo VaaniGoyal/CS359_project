@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from routes.user_routes import router as user_router
+from routes.user import router as user_router
+from routes.files import router as file_router
 from db import db
 
 app = FastAPI()
@@ -14,7 +15,8 @@ async def ping():
         return {"error": f"Failed to connect to MongoDB: {e}"}
 
 # Register routes
-app.include_router(user_router, prefix="/api")
+app.include_router(user_router, prefix="/api/user")
+app.include_router(file_router, prefix="/api/files")
 
 @app.get("/")
 async def root():

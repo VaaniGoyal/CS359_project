@@ -1,32 +1,33 @@
-from models.user_model import User
+from passlib.context import CryptContext
+from fastapi import HTTPException, status
+from models.user import User
+from utils.auth import hash_password, create_access_token, verify_password
 from db import db
 from bson import ObjectId
 
 user_collection = db["users"]
+class UserController:
+    @staticmethod
+    async def register_user(username: str, email: str, password: str):
+        # Check if user already exists
+        if user_collection.find_one({"email": email}):
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        hashed_password = hash_password(password)
+        new_user = {
+            "username": username,
+            "email": email,
+            "password": hashed_password
+        }
+        result = user_collection.insert_one(new_user)
+        return {"message": "User created successfully", "user_id": str(result.inserted_id)}
 
-# Helper to convert MongoDB document to dict
-def user_helper(user) -> dict:
-    return {
-        "id": str(user["_id"]),
-        "name": user["name"],
-        "email": user["email"],
-        "age": user["age"],
-    }
-
-# CRUD Functions
-async def create_user(user_data: User) -> dict:
-    user = await user_collection.insert_one(user_data.dict())
-    new_user = await user_collection.find_one({"_id": user.inserted_id})
-    return user_helper(new_user)
-
-async def get_users() -> list:
-    users = []
-    async for user in user_collection.find():
-        users.append(user_helper(user))
-    return users
-
-async def get_user(user_id: str) -> dict | None:
-    user = await user_collection.find_one({"_id": ObjectId(user_id)})
-    if user:
-        return user_helper(user)
-    return None
+    @staticmethod
+    async def login_user(email: str, password: str):
+        user = user_collection.find_one({"email": email})
+        if not user or not verify_password(password, user["password"]):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        # Create a JWT token
+        token = create_access_token(data={"sub": str(user["_id"])})
+        return {"access_token": token, "token_type": "bearer"}
