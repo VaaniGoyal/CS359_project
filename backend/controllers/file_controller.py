@@ -58,6 +58,7 @@ class FileController:
             # Raise an HTTP 404 if the file isn't found
             raise HTTPException(status_code=404, detail="File not found")
 
+    @staticmethod
     async def search_files(name: str = None, category: str = None, uploaded_by: str = None) -> List[File]:
         query = {}
 
@@ -69,8 +70,13 @@ class FileController:
         if uploaded_by:
             query["uploaded_by"] = uploaded_by
 
-        # Perform the search with the constructed query
-        files = await db.files.find(query).sort("created_at", DESCENDING).to_list(length=100)  # Adjust `length` as needed
+        # # Perform the search with the constructed query
+        # files = await files_collection.find(query).sort("created_at", DESCENDING).to_list(length=100)  # Adjust `length` as needed
+        cursor = files_collection.find(query).sort("created_at", DESCENDING)
+        files = await cursor.to_list(length=100)  # Adjust the length as needed
 
+        if not files:
+            raise HTTPException(status_code=404, detail="No files found matching the criteria.")
+            
         # Convert results to a list of File objects
         return [File(**{**file, "id": str(file["_id"])}) for file in files]

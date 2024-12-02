@@ -14,15 +14,11 @@ async def download_file(file_id: str):
     # Call the controller method to download the file by file_id
     return await FileController.download_file(file_id)
 
-@router.get("/download/{file_id}")
-async def download_file(file_id: str, token: str = Depends(verify_token)):
-    return await FileController.download_file(file_id, token)
-
-@router.get("/files/search")
+@router.get("/search")
 async def search_files(
     name: str = Query(None, description="Search files by name"),
-    file_type: str = Query(None, description="Search files by type"),
+    category: str = Query(None, description="Search files by type"),
     uploaded_by: str = Query(None, description="Search files by user ID"),
 ):
-    return await FileController.search_files(name=name, file_type=file_type, uploaded_by=uploaded_by)
+    return await FileController.search_files(name=name, category=category, uploaded_by=uploaded_by)
 
