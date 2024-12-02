@@ -15,9 +15,10 @@ function App() {
           <img src={headerImage} alt="Header" class="header" />
           <div class="header-text">Welcome to My Website</div>
       </div>
-      <div>
+      <div class="half-background"></div>
+      <div class="content">
         <Routes>
-          <Route path="/" element={<Login_Page />} />
+          <Route path="/" element={<Landing_Page />} />
           <Route path="/Login_Page" element={<Login_Page />} />
           <Route path="/Create_Account" element={<Create_Account />} />
           <Route path="/Main_Page" element={<Main_Page />} />

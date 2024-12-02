@@ -1,6 +1,78 @@
+/* Common to all pages */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html {
+  height: 100%;
+}
+body {
+  margin: 0;
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+}
+.half-background {
+  position: absolute;
+  top: 15%;
+  left: 0;
+  width: 100%;
+  height: 72%; 
+  background-color: #f5f8ff;
+  z-index: -1; 
+}
+.content {
+  position: relative;
+  z-index: 1; 
+}
 .header {
   position: relative;
   width: 100%;
-  height: 0%;
-  object-fit: cover;
+  height: 10px; 
+  overflow: hidden;
+  margin-top: -5px;
+  top: 0; 
+}
+/* Landing Page */
+.landHead{
+  position: absolute;
+  top: 140px;
+  left: 3%;
+  font-size: 52px;
+}
+.landContent{
+  position: absolute;
+  top: 280px;
+  left: 3%;
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.login{
+  cursor: pointer;
+  position: absolute;
+  top: 400px;
+  left: 3%;
+  background-color: #ffffff;
+  border-color: #ef8094;
+  border-width: 5px;
+  border-radius: 20px;
+  padding: 10px 40px;
+}
+.create{
+  cursor: pointer;
+  position: absolute;
+  top: 400px;
+  left: 20%;
+  background-color: #ffffff;
+  border-color: #ef8094;
+  border-width: 5px;
+  border-radius: 20px;
+  padding: 10px 40px;
+}
+.comp {
+  position: absolute;
+  left: 43%;
+  top: 55px;
+  width: 400px;
 }
