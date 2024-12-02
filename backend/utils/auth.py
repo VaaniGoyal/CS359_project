@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from models.user import User
 
 # Secret key to encode the JWT token (keep it secret)
@@ -31,19 +31,34 @@ def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Function to verify JWT token
-def verify_token(token: str):
+def get_authorization_header(request: Request):
+    authorization = request.headers.get("Authorization")
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    return authorization
+
+def verify_token(authorization: str = Depends(get_authorization_header)):
     try:
-        # Decode the token using the secret key and algorithm
+        token = authorization.split(" ")[1]  # Extract token
+        print(f"Received token: {token}")
+
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"Decoded token: {payload}")
+
+        # Check expiration
         if "exp" in payload and datetime.fromtimestamp(payload["exp"]) < datetime.utcnow():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired",
             )
-        return payload  # Return decoded payload (this could include user info, e.g., user_id)
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-        )
+        if "sub" not in payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has no 'sub' claim",
+            )
+
+        return payload
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")

@@ -1,6 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+from gridfs import GridFS
 
 uri = "mongodb+srv://vaanigoyal:Vaani%4012345@networkdb.rbpnd.mongodb.net/?retryWrites=true&w=majority&appName=NetworkDB"
 
@@ -16,3 +17,6 @@ except Exception as e:
 db = client.network
 users_collection = db.users
 files_collection = db.files
+
+# Initialize GridFS for file storage
+fs = GridFS(db)

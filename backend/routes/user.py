@@ -20,3 +20,4 @@ async def register(user: UserCreate):
 @router.post("/login")
 async def login(user: UserLogin):
     return await UserController.login_user(user.email, user.password)
+
