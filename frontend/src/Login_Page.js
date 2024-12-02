@@ -1,4 +1,3 @@
-//Login_Page.js
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -24,37 +23,15 @@ function Login_Page() {
 
   return (
     <div className="Login_Page">
-      <br />
-      <br />
-      <h3>Welcome to P2P file distribution systems</h3>
-      <div>
-        <div>
-            <h3><strong><u>LOGIN HERE</u></strong></h3><br />
-            <span>Email Address</span>
-            <input
-              type="text"
-              placeholder="Your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <br />
-            <br />
-            <span>Password</span>
-            <input
-              type="password"
-              placeholder="Your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <br />
-            <br />
-            <div>
-              <button
-                onClick={handleLoginClick}
-                type="submit"
-              > Login </button>
-            </div>
-        </div>
+      <div class="box">
+        <h4 className="head">LOGIN<br/><br/></h4>
+        <span>Email Address</span>
+        <input type="text" class="textbox" placeholder="enter email..." value={email} onChange={(e) => setEmail(e.target.value)} />
+        <span>Password</span>
+        <input type="password" class="textbox" placeholder="enter password..." value={password} onChange={(e) => setPassword(e.target.value)} />
+        <br/>
+        <button className="btn" onClick={handleLoginClick}>Login</button>
+        {error && <div style={{ color: "red", marginTop: "-25px" }}>{error}</div>}
       </div>
     </div>
   );
