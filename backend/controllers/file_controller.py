@@ -16,7 +16,7 @@ class FileController:
     @staticmethod
     async def upload_file(file: UploadFile, category: str, token: str = Depends(verify_token)):
         try:
-            print(f"Received file: {file.filename}, Category: {category}, Token: {token}")
+            # print(f"Received file: {file.filename}, Category: {category}, Token: {token}")
         
             allowed_categories = ["document", "image", "video"]
             if category not in allowed_categories:
@@ -53,7 +53,7 @@ class FileController:
             return {"message": "File uploaded successfully", "file_id": str(file_id)}
     
         except Exception as e:
-            print(f"Error during file upload: {e}")
+            # print(f"Error during file upload: {e}")
             raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
     @staticmethod
@@ -61,11 +61,11 @@ class FileController:
         try:
             # Convert the file_id to ObjectId
             file_id = ObjectId(file_id)
-            print(f"Trying to retrieve file with ID: {file_id}")
+            # print(f"Trying to retrieve file with ID: {file_id}")
             file_document = await files_collection.find_one({"_id": file_id})
             if not file_document:
                 raise HTTPException(status_code=404, detail="File not found")
-            print(f"file document: {file_document}")
+            # print(f"file document: {file_document}")
             gridfs_file_id = file_document['file_id']
             file_stream = await fs.open_download_stream(ObjectId(gridfs_file_id))
             file_name = file_document["file_name"]
@@ -85,19 +85,16 @@ class FileController:
     @staticmethod
     async def search_files(name: str = None, category: List[str] = None, username: str = None) -> List[dict]:
         query = {}
-        # Add name filter if provided
         if name:
-            query["file_name"] = {"$regex": name, "$options": "i"}  # Case-insensitive search
-        # Add category filter if provided (assuming category is a list of categories)
+            query["file_name"] = {"$regex": name, "$options": "i"}  
         if category:
-            query["category"] = {"$in": category}  # Find documents where category matches any in the provided list
-        # If username is provided, fetch the corresponding user_id
+            query["category"] = {"$in": category} 
         if username:
             user = await users_collection.find_one({"username": username}, {"_id": 1})
             if not user:
-                raise HTTPException(status_code=404, detail="User not found.")
-            query["uploaded_by"] = str(user["_id"])  # Filter by the uploaded_by user_id
-        # Perform the search with the constructed query
+                raise HTTPException(status_code=404, detail="No files found matching the criteria")
+            query["uploaded_by"] = str(user["_id"])  
+        
         cursor = files_collection.find(query, {"_id": 1, "file_name": 1, "category": 1, "uploaded_by": 1, "created_at": 1}).sort("created_at", -1)
 
         files = await cursor.to_list(length=100)  # Limit to 100 files, can adjust as needed

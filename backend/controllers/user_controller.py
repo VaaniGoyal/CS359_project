@@ -9,7 +9,6 @@ user_collection = db["users"]
 class UserController:
     @staticmethod
     async def register_user(username: str, email: str, password: str):
-        # Check if user already exists
         existing_user = await user_collection.find_one({"email": email})
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already registered")
