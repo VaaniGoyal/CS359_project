@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import axios from "axios";
 import './index.css';
+import qs from 'qs';
 
 function Main_Page() {
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [category1, setCategory1] = useState([]);
-  const [uploaded_by, setUploadedBy] = useState("");
+  const [username, setUsername] = useState("");
   const [category, setCategory] = useState(""); 
   const [searchResults, setSearchResults] = useState([]);
   const [error, setError] = useState("");
@@ -62,13 +63,16 @@ function Main_Page() {
     try {
       const params = {};
       if (name) params.name = name;
-      if (uploaded_by) params.uploaded_by = uploaded_by;
       if (category1.length > 0) {
-          category1.forEach(category => {
-              params.category = category;
-          });
+        params.category = category1; // Include all selected categories
       }
-        const response = await axios.get("http://127.0.0.1:8000/api/files/search", { params });
+      if (username) params.username = username;
+        const response = await axios.get("http://127.0.0.1:8000/api/files/search", 
+          { params , 
+          paramsSerializer: (params) => {
+            return qs.stringify(params, { arrayFormat: 'repeat' });
+          },
+        });
         setSearchResults(response.data); // Assuming backend returns a list of files
     } catch (error) {
       console.error("Error searching files:", error.response?.data || error.message);
@@ -77,13 +81,13 @@ function Main_Page() {
   };
   const handleListSearch = async () => {
     setName(""); 
-    setUploadedBy("");
     setCategory1([]);
+    setUsername("");
     try {
       const params = {};
       params.name = undefined;
-      params.uploaded_by = undefined;
       params.category = undefined;
+      params.username = undefined;
       const response = await axios.get("http://127.0.0.1:8000/api/files/search", { params });
       setSearchResults(response.data); // Assuming backend returns a list of files
     } catch (error) {
@@ -144,8 +148,8 @@ function Main_Page() {
           Uploaded By:
           <input
             type="text"
-            value={uploaded_by}
-            onChange={(e) => setUploadedBy(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             style={{marginLeft: "10px"}}
           />
         </label>
