@@ -12,7 +12,7 @@ function Main_Page() {
   const [searchResults, setSearchResults] = useState([]);
   const [error, setError] = useState("");
   const [error1, setError1] = useState("");
-  const [error2, setError2] = useState("");
+  const [error2, setError2] = React.useState({});
   const [error3, setError3] = React.useState({});
   const [message, setMessage] = useState("");
   const [msg, setMsg] = React.useState({});
@@ -127,12 +127,17 @@ function Main_Page() {
       link.download = filename;  // Set the filename to be downloaded
       link.click();  // Trigger the download
     })
-    .then(setError2(""))
     .catch(error2 => {
       if (error2.response && error2.response.data && error2.response.data.detail) {
-        setError2(error2.response.data.detail); 
+        setError2((prev) => ({
+          ...prev,
+          [fileId]: error2.response.data.detail,
+        })); 
       } else {
-        setError2("File download failed. Please try again."); 
+        setError2((prev) => ({
+          ...prev,
+          [fileId]: "Download failed",
+        })); 
       }
     });
   };
@@ -141,11 +146,14 @@ function Main_Page() {
       const token = localStorage.getItem("token");
       if (!token) {
         if (error3.response && error3.response.data && error3.response.data.detail) {
-          setError3((prev) => ({ ...prev, [fileId]: "" })); 
-        } else {
           setError3((prev) => ({
             ...prev,
             [fileId]: error3.response.data.detail,
+          })); 
+        } else {
+          setError3((prev) => ({
+            ...prev,
+            [fileId]: "You are not authorized to delete this file",
           })); 
         }
         return;
@@ -292,6 +300,9 @@ function Main_Page() {
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>{file.created_at}</td>
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>
               <button style={{width: "65px"}} onClick={() => handleDownload(file.id, file.file_name)}>Download</button>
+              {error2[file.id] && (
+              <div style={{ color: "red", marginTop: "10px" }}>{error2[file.id]}</div>
+              )}
               <button style={{ width: "55px", marginLeft: "10px" }} onClick={() => handleDelete(file.id)}>Delete</button>
               {msg[file.id] && (
               <div style={{ color: "red", marginTop: "10px" }}>{msg[file.id]}</div>
