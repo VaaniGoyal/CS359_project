@@ -1,44 +1,61 @@
-from fastapi import HTTPException, UploadFile, File, Depends
+from fastapi import HTTPException, UploadFile, File, Depends, Query
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
-from db import fs, files_collection
+from db import db, fs, files_collection
 from typing import List
 from models.file import File
 from utils.auth import verify_token
 from datetime import datetime
 from pymongo import DESCENDING
+from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+import io
 
 class FileController:
     @staticmethod
     async def upload_file(file: UploadFile, category: str, token: str = Depends(verify_token)):
-        allowed_categories = ["document", "image", "video"]
-        if category not in allowed_categories:
-            raise HTTPException(status_code=400, detail="Invalid category")
-        user_id = token["sub"]  # Extract the user_id from the token
         try:
-            # Save file content to GridFS
-            file_id = fs.put(
-                await file.read(),  # File content as bytes
-                filename=file.filename,
-                metadata={
-                    "category": category,
-                    "uploaded_by": user_id,
-                    "created_at": datetime.utcnow().isoformat()
-                }
-            )
+            print(f"Received file: {file.filename}, Category: {category}, Token: {token}")
+        
+            allowed_categories = ["document", "image", "video"]
+            if category not in allowed_categories:
+                raise HTTPException(status_code=400, detail="Invalid category")
+        
+            user_id = token["sub"]
+        
+            # Create GridFS bucket
+            bucket = AsyncIOMotorGridFSBucket(db)
+        
+            # Read the file content into memory (in case it's not too large)
+            file_content = await file.read()
+            file_stream = io.BytesIO(file_content)  # Create an in-memory stream from file content
+        
+            # Upload file content to GridFS using upload_from_stream
+            file_id = await bucket.upload_from_stream(file.filename, file_stream, metadata={
+                "category": category,
+                "uploaded_by": user_id,
+                "created_at": datetime.utcnow().isoformat()
+            })
+        
+            print(f"File uploaded to GridFS with ID: {file_id}")
+        
             # Save metadata in files collection
             new_file = {
                 "file_name": file.filename,
-                "file_id": str(file_id),  # GridFS file ID as a string
+                "file_id": str(file_id),
                 "category": category,
                 "uploaded_by": user_id,
                 "created_at": datetime.utcnow().isoformat()
             }
-            files_collection.insert_one(new_file)
+        
+            result = await files_collection.insert_one(new_file)
+            print(f"File metadata inserted: {result.inserted_id}")
+        
             return {"message": "File uploaded successfully", "file_id": str(file_id)}
+    
         except Exception as e:
-            # Handle any errors during the upload process
+            print(f"Error during file upload: {e}")
             raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+
 
     @staticmethod
     async def download_file(file_id: str):
