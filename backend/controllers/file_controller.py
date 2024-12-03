@@ -68,29 +68,16 @@ class FileController:
             print(f"file document: {file_document}")
             gridfs_file_id = file_document['file_id']
             file_stream = await fs.open_download_stream(ObjectId(gridfs_file_id))
-            # print(f"file stream opened for file_id: {gridfs_file_id}")
-            # async def iterfile():
-            #     async for chunk in file_stream:
-            #         yield chunk
-            # await file_stream.open()
-
-            # Determine the file's MIME type (default to 'application/octet-stream' if unknown)
             file_name = file_document["file_name"]
             mime_type, _ = mimetypes.guess_type(file_name)
-            print(f"Detected MIME type: {mime_type}")
             if not mime_type:
-                print("vaani")
                 mime_type = "application/octet-stream"
-
             
-            # Return file as stream with the correct MIME type and filename
-            # return StreamingResponse(file_stream, media_type="application/octet-stream", headers={
-            #     "Content-Disposition": f"attachment; filename=\"{file_name}\"",
-            #     "Content-Type": mime_type
-            # })
-            return StreamingResponse(file_stream, media_type="png", headers={
-                "Content-Disposition": f"attachment; filename=\"testfile.png\""
-            })
+            headers = {
+                "Content-Disposition": f"attachment; filename={file_name}"
+            }
+        
+            return StreamingResponse(file_stream, media_type=mime_type, headers=headers)
 
         except Exception as e:
             raise HTTPException(status_code=404, detail=f"File not found: {str(e)}")
