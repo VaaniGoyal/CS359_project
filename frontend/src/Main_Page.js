@@ -11,6 +11,11 @@ function Main_Page() {
   const [category, setCategory] = useState(""); 
   const [searchResults, setSearchResults] = useState([]);
   const [error, setError] = useState("");
+  const [error1, setError1] = useState("");
+  const [error2, setError2] = useState("");
+  const [error3, setError3] = React.useState({});
+  const [message, setMessage] = useState("");
+  const [msg, setMsg] = React.useState({});
 
   // Function to handle file selection
   const handleFileChange = (event) => {
@@ -23,14 +28,14 @@ function Main_Page() {
   // Function to upload the file
   const handleFileUpload = async () => {
     if (!file) {
-      alert("Please select a file to upload.");
+      setError("Select a file to upload");
       return;
     }
     const formData = new FormData();
     formData.append("file", file);
     const token = localStorage.getItem("token"); // Retrieve JWT token from localStorage
     if (!token) {
-      alert("User is not authenticated. Please log in.");
+      setError("User is not authenticated. Please log in again");
       return;
     }
     try {
@@ -43,10 +48,14 @@ function Main_Page() {
           },
         }
       );
-      alert(response.data.message);
+      setMessage(response.data.message); // Set success message
+      setError(""); 
     } catch (error) {
-      console.error("Error uploading file:", error.response?.data || error.message);
-      alert("Failed to upload the file.");
+      if (error.response && error.response.data && error.response.data.detail) {
+        setError(error.response.data.detail); 
+      } else {
+        setError("Fail to upload the file. Please try again."); 
+      }
     }
   };
 
@@ -60,6 +69,7 @@ function Main_Page() {
   };
   // Function to handle search
   const handleSearch = async () => {
+    // setSearchResults([]);
     try {
       const params = {};
       if (name) params.name = name;
@@ -74,9 +84,14 @@ function Main_Page() {
           },
         });
         setSearchResults(response.data); // Assuming backend returns a list of files
-    } catch (error) {
-      console.error("Error searching files:", error.response?.data || error.message);
-      alert("Failed to search for files.");
+        setError1("");
+    } catch (error1) {
+      if (error1.response && error1.response.data && error1.response.data.detail) {
+        setError1(error1.response.data.detail); 
+      } else {
+        setError1("Error searching files. Please try again."); 
+      }
+      setSearchResults([]);
     }
   };
   const handleListSearch = async () => {
@@ -90,9 +105,14 @@ function Main_Page() {
       params.username = undefined;
       const response = await axios.get("http://127.0.0.1:8000/api/files/search", { params });
       setSearchResults(response.data); // Assuming backend returns a list of files
-    } catch (error) {
-      console.error("Error searching files:", error.response?.data || error.message);
-      alert("Failed to search for files.");
+      setError1("");
+    } catch (error1) {
+      if (error1.response && error1.response.data && error1.response.data.detail) {
+        setError1(error1.response.data.detail); 
+      } else {
+        setError1("Error searching files. Please try again."); 
+      }
+      setSearchResults([]);
     }
   };
 
@@ -107,19 +127,29 @@ function Main_Page() {
       link.download = filename;  // Set the filename to be downloaded
       link.click();  // Trigger the download
     })
-    .catch(error => {
-      console.error("Error downloading file:", error);
+    .then(setError2(""))
+    .catch(error2 => {
+      if (error2.response && error2.response.data && error2.response.data.detail) {
+        setError2(error2.response.data.detail); 
+      } else {
+        setError2("File download failed. Please try again."); 
+      }
     });
   };
   const handleDelete = async (fileId) => {
     try {
       const token = localStorage.getItem("token");
-  
       if (!token) {
-        alert("User is not authenticated. Please log in.");
+        if (error3.response && error3.response.data && error3.response.data.detail) {
+          setError3((prev) => ({ ...prev, [fileId]: "" })); 
+        } else {
+          setError3((prev) => ({
+            ...prev,
+            [fileId]: error3.response.data.detail,
+          })); 
+        }
         return;
       }
-  
       const response = await axios.delete(
         `http://localhost:8000/api/files/delete/${fileId}`, // Correct URL without extra brace
         {
@@ -130,17 +160,40 @@ function Main_Page() {
       );
   
       if (response.status === 200) {
-        alert("File deleted successfully.");
-        // Optionally, update UI to remove the deleted file
+        setMsg((prev) => ({
+          ...prev,
+          [fileId]: "file deleted successfully",
+        }));
+        
         setSearchResults((prevResults) =>
           prevResults.filter((file) => file.id !== fileId)
         );
+        setError3((prev) => ({ ...prev, [fileId]: "" }));
       } else {
-        alert("Failed to delete the file. Please try again.");
+        if (error3.response && error3.response.data && error3.response.data.detail) {
+          setError3((prev) => ({
+            ...prev,
+            [fileId]: error3.response.data.detail,
+          })); 
+        } else {
+          setError3((prev) => ({
+            ...prev,
+            [fileId]: "failed to delete the file",
+          }));
+        }
       }
-    } catch (error) {
-      console.error("Error deleting file:", error.response?.data || error.message);
-      alert("Failed to delete the file.");
+    } catch (error3) {
+      if (error3.response && error3.response.data && error3.response.data.detail) {
+        setError3((prev) => ({
+          ...prev,
+          [fileId]: error3.response.data.detail,
+        })); 
+      } else {
+        setError3((prev) => ({
+          ...prev,
+          [fileId]: "failed to delete the file",
+        }));
+      }
     }
   };
   
@@ -159,6 +212,8 @@ function Main_Page() {
           <option value="video">Video</option>
         </select>
         <button onClick={handleFileUpload} style={{marginLeft: "10px", width: "20%"}}>Upload File</button>
+        {message && <div style={{ color: "green" }}>{message}</div>} {/* Display success message */}
+        {error && <div style={{ color: "red", marginTop: "20.5px" }}>{error}</div>}
       </div>
 
       {/* Search Section */}
@@ -215,8 +270,7 @@ function Main_Page() {
         <button onClick={handleSearch} style={{width: "15%"}}>Search</button>
         <button onClick={handleListSearch} style={{width: "15%"}}>List all files</button>
       </div>
-
-      {error && <div>{error}</div>}
+      {error1 && <div style={{ color: "red", marginTop: "30px" }}>{error1}</div>}
       <br/><br/>
       {searchResults.length > 0 ? (
       <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px" }}>
@@ -238,13 +292,19 @@ function Main_Page() {
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>{file.created_at}</td>
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>
               <button style={{width: "65px"}} onClick={() => handleDownload(file.id, file.file_name)}>Download</button>
-              <button style={{width: "55px", marginLeft: "10px"}} onClick={() => handleDelete(file.id)}>Delete</button>
+              <button style={{ width: "55px", marginLeft: "10px" }} onClick={() => handleDelete(file.id)}>Delete</button>
+              {msg[file.id] && (
+              <div style={{ color: "red", marginTop: "10px" }}>{msg[file.id]}</div>
+              )}
+              {error3[file.id] && (
+              <div style={{ color: "red", marginTop: "10px" }}>{error3[file.id]}</div>
+              )}
             </td>
           </tr>
         ))}
       </tbody>
     </table>) : (
-        <div>No files found.</div> 
+        <div></div> 
     )}
     </div>
       

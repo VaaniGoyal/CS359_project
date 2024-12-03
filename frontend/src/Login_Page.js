@@ -17,7 +17,11 @@ function Login_Page() {
       localStorage.setItem("token", response.data.access_token);
       navigate("/Main_Page"); 
     } catch (error) {
-      setError("Sign-in failed. Please try again.");
+      if (error.response && error.response.data && error.response.data.detail) {
+        setError(error.response.data.detail); 
+      } else {
+        setError("Sign-in failed. Please try again."); 
+      }
     }
   };
 

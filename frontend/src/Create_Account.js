@@ -19,7 +19,11 @@ function Create_Account() {
       localStorage.setItem("token", response.data.token);
       navigate("/Main_Page"); 
     } catch (error) {
-      setError("Account creation failed. Please try again.");
+      if (error.response && error.response.data && error.response.data.detail) {
+        setError(error.response.data.detail); 
+      } else {
+        setError("User registration failed. Please try again."); 
+      }
     }
   };
 
