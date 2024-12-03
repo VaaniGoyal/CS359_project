@@ -18,7 +18,7 @@ function App() {
       <div class="half-background"></div>
       <div class="content">
         <Routes>
-          <Route path="/" element={<Main_Page />} />
+          <Route path="/" element={<Landing_Page />} />
           <Route path="/Login_Page" element={<Login_Page />} />
           <Route path="/Create_Account" element={<Create_Account />} />
           <Route path="/Main_Page" element={<Main_Page />} />

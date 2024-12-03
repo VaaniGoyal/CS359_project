@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import axios from "axios";
+import './index.css';
 
 function Main_Page() {
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [category1, setCategory1] = useState([]);
   const [uploadedBy, setUploadedBy] = useState("");
-  const [category, setCategory] = useState("document"); 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [category, setCategory] = useState(""); 
+//   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [error, setError] = useState("");
 
@@ -62,9 +63,26 @@ function Main_Page() {
   const handleSearch = async () => {
     try {
         const params = {
-            name,
-            category: category1.length > 0 ? category1 : undefined, // Only add category if it's selected
-            uploaded_by: uploadedBy || undefined, // Only add uploadedBy if it's provided
+            name: name || undefined,
+            category: category1.length > 0 ? category1 : undefined, 
+            uploaded_by: uploadedBy || undefined, 
+        };
+        const response = await axios.get("http://127.0.0.1:8000/api/files/search", { params });
+        setSearchResults(response.data); // Assuming backend returns a list of files
+    } catch (error) {
+      console.error("Error searching files:", error.response?.data || error.message);
+      alert("Failed to search for files.");
+    }
+  };
+  const handleListSearch = async () => {
+    setName(""); 
+    setUploadedBy("");
+    setCategory1([]);
+    try {
+        const params = {
+            name: undefined,
+            category: undefined, 
+            uploaded_by: undefined, 
         };
         const response = await axios.get("http://127.0.0.1:8000/api/files/search", { params });
         setSearchResults(response.data); // Assuming backend returns a list of files
@@ -74,23 +92,45 @@ function Main_Page() {
     }
   };
 
+  const handleDownload = async (fileId) => {
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/api/files/download/${fileId}`, {
+        responseType: 'blob', // Ensure the response is treated as a file (binary data)
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = response.headers['content-disposition'].split('filename=')[1]; // Get filename from headers
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      alert("Failed to download the file.");
+    }
+  };
+  
+
   return (
     <div className="Main_Page">
       {/* Upload File Section */}
-      <div>
+      <div className="upload">
         <h2>Upload a File</h2>
-        <input type="file" onChange={handleFileChange} />
-        <select value={category} onChange={handleCategoryChange}>
+        <br/>
+        <input className="input" type="file" onChange={handleFileChange} />
+        <select value={category || ""} onChange={handleCategoryChange} style={{margin: "5px auto", padding: "5px", width: "55%", borderRadius: "5px", border: "1px solid #ccc"}}>
+          <option value="" disabled> Select a category </option>
           <option value="document">Document</option>
           <option value="image">Image</option>
           <option value="video">Video</option>
         </select>
-        <button onClick={handleFileUpload}>Upload File</button>
+        <button onClick={handleFileUpload} style={{marginLeft: "10px", width: "20%"}}>Upload File</button>
       </div>
 
       {/* Search Section */}
-      <div>
-      <h2>Search Files</h2>
+      <div className="search">
+      <h2 style={{ marginRight: "200px" }}>Search Files</h2>
+      <br/>
       <div>
         <label>
           Name:
@@ -98,24 +138,23 @@ function Main_Page() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            style={{marginRight: "50px", marginLeft: "10px"}}
           />
         </label>
-      </div>
-
-      <div>
         <label>
           Uploaded By:
           <input
             type="text"
             value={uploadedBy}
             onChange={(e) => setUploadedBy(e.target.value)}
+            style={{marginLeft: "10px"}}
           />
         </label>
       </div>
-
-      <div>
-        <h3>Categories:</h3>
-        <label>
+      <br/>
+      <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+        <h3 style={{ margin: 0 }}>Categories:</h3>
+        <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
           <input
             type="checkbox"
             value="document"
@@ -139,24 +178,36 @@ function Main_Page() {
           />
           Video
         </label>
+        <button onClick={handleSearch} style={{width: "15%"}}>Search</button>
+        <button onClick={handleListSearch} style={{width: "15%"}}>List all files</button>
       </div>
 
-      <button onClick={handleSearch}>Search</button>
-
       {error && <div>{error}</div>}
-
-      {searchResults && (
-        <div>
-          <h3>Search Results</h3>
-          <ul>
-            {searchResults.map((file) => (
-              <li key={file.id}>
-                {file.file_name} ({file.category})
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <br/><br/>
+      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px" }}>
+      <thead>
+        <tr>
+          <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>File Name (Category)</th>
+          <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Owner</th>
+          <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Timestamp</th>
+          <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {searchResults.map((file) => (
+          <tr key={file.id}>
+            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+              {file.file_name} ({file.category})
+            </td>
+            <td style={{ border: "1px solid #ddd", padding: "8px" }}>{file.uploaded_by}</td>
+            <td style={{ border: "1px solid #ddd", padding: "8px" }}>{file.created_at}</td>
+            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+              <button onClick={() => handleDownload(file.id)}>Download</button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
     </div>
       
     </div>

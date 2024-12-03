@@ -146,3 +146,14 @@ body {
   border-radius: 20px;
   padding: 10px 40px;
 }
+/* main page */
+.upload{
+  position: absolute;
+  top: 110px;
+  left: 60%;
+}
+.search{
+  position: absolute;
+  top: 110px;
+  left: 2.5%;
+}
