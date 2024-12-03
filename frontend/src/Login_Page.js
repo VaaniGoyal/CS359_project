@@ -14,7 +14,7 @@ function Login_Page() {
         email: email,
         password: password,
       });
-      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("token", response.data.access_token);
       navigate("/Main_Page"); 
     } catch (error) {
       setError("Sign-in failed. Please try again.");
