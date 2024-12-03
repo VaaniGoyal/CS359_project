@@ -6,9 +6,8 @@ function Main_Page() {
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [category1, setCategory1] = useState([]);
-  const [uploadedBy, setUploadedBy] = useState("");
+  const [uploaded_by, setUploadedBy] = useState("");
   const [category, setCategory] = useState(""); 
-//   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [error, setError] = useState("");
 
@@ -58,15 +57,17 @@ function Main_Page() {
       setCategory1([...category1, value]); // Add category
     }
   };
-
   // Function to handle search
   const handleSearch = async () => {
     try {
-        const params = {
-            name: name || undefined,
-            category: category1.length > 0 ? category1 : undefined, 
-            uploaded_by: uploadedBy || undefined, 
-        };
+      const params = {};
+      if (name) params.name = name;
+      if (uploaded_by) params.uploaded_by = uploaded_by;
+      if (category1.length > 0) {
+          category1.forEach(category => {
+              params.category = category;
+          });
+      }
         const response = await axios.get("http://127.0.0.1:8000/api/files/search", { params });
         setSearchResults(response.data); // Assuming backend returns a list of files
     } catch (error) {
@@ -79,19 +80,17 @@ function Main_Page() {
     setUploadedBy("");
     setCategory1([]);
     try {
-        const params = {
-            name: undefined,
-            category: undefined, 
-            uploaded_by: undefined, 
-        };
-        const response = await axios.get("http://127.0.0.1:8000/api/files/search", { params });
-        setSearchResults(response.data); // Assuming backend returns a list of files
+      const params = {};
+      params.name = undefined;
+      params.uploaded_by = undefined;
+      params.category = undefined;
+      const response = await axios.get("http://127.0.0.1:8000/api/files/search", { params });
+      setSearchResults(response.data); // Assuming backend returns a list of files
     } catch (error) {
       console.error("Error searching files:", error.response?.data || error.message);
       alert("Failed to search for files.");
     }
   };
-
   const handleDownload = async (fileId) => {
     try {
       const response = await axios.get(`http://127.0.0.1:8000/api/files/download/${fileId}`, {
@@ -145,7 +144,7 @@ function Main_Page() {
           Uploaded By:
           <input
             type="text"
-            value={uploadedBy}
+            value={uploaded_by}
             onChange={(e) => setUploadedBy(e.target.value)}
             style={{marginLeft: "10px"}}
           />
@@ -158,7 +157,7 @@ function Main_Page() {
           <input
             type="checkbox"
             value="document"
-            onChange={handleCategoryChange}
+            onChange={handleCategory1Change}
           />
           Document
         </label>
@@ -166,7 +165,7 @@ function Main_Page() {
           <input
             type="checkbox"
             value="image"
-            onChange={handleCategoryChange}
+            onChange={handleCategory1Change}
           />
           Image
         </label>
@@ -174,7 +173,7 @@ function Main_Page() {
           <input
             type="checkbox"
             value="video"
-            onChange={handleCategoryChange}
+            onChange={handleCategory1Change}
           />
           Video
         </label>
@@ -184,6 +183,7 @@ function Main_Page() {
 
       {error && <div>{error}</div>}
       <br/><br/>
+      {searchResults.length > 0 ? (
       <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px" }}>
       <thead>
         <tr>
@@ -194,7 +194,7 @@ function Main_Page() {
         </tr>
       </thead>
       <tbody>
-        {searchResults.map((file) => (
+        {searchResults.map((file)=> (
           <tr key={file.id}>
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>
               {file.file_name} ({file.category})
@@ -207,7 +207,9 @@ function Main_Page() {
           </tr>
         ))}
       </tbody>
-    </table>
+    </table>) : (
+        <div>No files found.</div> // Show a message if there are no search results
+    )}
     </div>
       
     </div>
