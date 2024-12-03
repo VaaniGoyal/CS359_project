@@ -103,12 +103,19 @@ function Main_Page() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = response.headers['content-disposition'].split('filename=')[1]; // Get filename from headers
+
+      // Extract filename from Content-Disposition header
+      const contentDisposition = response.headers['content-disposition'];
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : 'downloaded_file';
+
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
     } catch (error) {
-      console.error("Error downloading file:", error);
+      console.error("Error downloading file:", error.response?.data || error.message);
       alert("Failed to download the file.");
     }
   };
@@ -212,7 +219,7 @@ function Main_Page() {
         ))}
       </tbody>
     </table>) : (
-        <div>No files found.</div> // Show a message if there are no search results
+        <div>No files found.</div> 
     )}
     </div>
       
