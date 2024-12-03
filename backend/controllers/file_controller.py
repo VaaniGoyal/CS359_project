@@ -124,3 +124,21 @@ class FileController:
                 "created_at": file["created_at"]
             })
         return result
+
+    @staticmethod
+    async def delete_files(file_id: str, token: str = Depends(verify_token)):
+        try:
+            if not ObjectId.is_valid(file_id):
+                raise HTTPException(status_code=400, detail="Invalid file ID.")
+            file = await files_collection.find_one({"_id": ObjectId(file_id)})
+            if not file:
+                raise HTTPException(status_code=404, detail="File not found.")
+            if file["uploaded_by"] != token["sub"]:  # Assuming the `token` contains `user_id`
+                raise HTTPException(status_code=403, detail="You are not authorized to delete this file.")
+            delete_result = await files_collection.delete_one({"_id": ObjectId(file_id)})
+            if delete_result.deleted_count == 0:
+                raise HTTPException(status_code=500, detail="Failed to delete the file.")
+
+            return {"message": "File deleted successfully."}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))

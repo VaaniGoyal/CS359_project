@@ -23,3 +23,7 @@ async def search_files(
 ):
     return await FileController.search_files(name=name, category=category, username=username)
 
+@router.delete("/delete/{file_id}")
+async def delete_files(file_id: str, token: str = Depends(verify_token)):
+    return await FileController.delete_files(file_id, token)
+
