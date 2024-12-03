@@ -3,9 +3,13 @@ import axios from "axios";
 
 function Main_Page() {
   const [file, setFile] = useState(null);
-  const [category, setCategory] = useState("document"); // Default category
+  const [name, setName] = useState("");
+  const [category1, setCategory1] = useState([]);
+  const [uploadedBy, setUploadedBy] = useState("");
+  const [category, setCategory] = useState("document"); 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  const [error, setError] = useState("");
 
   // Function to handle file selection
   const handleFileChange = (event) => {
@@ -45,11 +49,25 @@ function Main_Page() {
     }
   };
 
+  const handleCategory1Change = (event) => {
+    const value = event.target.value;
+    if (category1.includes(value)) {
+      setCategory1(category1.filter((item) => item !== value)); // Remove category
+    } else {
+      setCategory1([...category1, value]); // Add category
+    }
+  };
+
   // Function to handle search
   const handleSearch = async () => {
     try {
-      const response = await axios.get(`http://localhost:8000/api/search?query=${searchQuery}`);
-      setSearchResults(response.data.files); // Assuming backend returns a list of files
+        const params = {
+            name,
+            category: category1.length > 0 ? category1 : undefined, // Only add category if it's selected
+            uploaded_by: uploadedBy || undefined, // Only add uploadedBy if it's provided
+        };
+        const response = await axios.get("http://127.0.0.1:8000/api/files/search", { params });
+        setSearchResults(response.data); // Assuming backend returns a list of files
     } catch (error) {
       console.error("Error searching files:", error.response?.data || error.message);
       alert("Failed to search for files.");
@@ -72,48 +90,75 @@ function Main_Page() {
 
       {/* Search Section */}
       <div>
-        <h2>Search Files</h2>
-        <input
-          type="text"
-          placeholder="Search for files..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <button onClick={handleSearch}>Search</button>
+      <h2>Search Files</h2>
+      <div>
+        <label>
+          Name:
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
       </div>
 
-      {/* Search Results Table */}
-      {searchResults.length > 0 && (
+      <div>
+        <label>
+          Uploaded By:
+          <input
+            type="text"
+            value={uploadedBy}
+            onChange={(e) => setUploadedBy(e.target.value)}
+          />
+        </label>
+      </div>
+
+      <div>
+        <h3>Categories:</h3>
+        <label>
+          <input
+            type="checkbox"
+            value="document"
+            onChange={handleCategoryChange}
+          />
+          Document
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            value="image"
+            onChange={handleCategoryChange}
+          />
+          Image
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            value="video"
+            onChange={handleCategoryChange}
+          />
+          Video
+        </label>
+      </div>
+
+      <button onClick={handleSearch}>Search</button>
+
+      {error && <div>{error}</div>}
+
+      {searchResults && (
         <div>
           <h3>Search Results</h3>
-          <table border="1">
-            <thead>
-              <tr>
-                <th>File Name</th>
-                <th>File Size</th>
-                <th>Uploaded By</th>
-                <th>Category</th>
-                <th>Download</th>
-              </tr>
-            </thead>
-            <tbody>
-              {searchResults.map((file) => (
-                <tr key={file.id}>
-                  <td>{file.name}</td>
-                  <td>{file.size}</td>
-                  <td>{file.uploader}</td>
-                  <td>{file.category}</td>
-                  <td>
-                    <a href={file.downloadLink} target="_blank" rel="noopener noreferrer">
-                      Download
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul>
+            {searchResults.map((file) => (
+              <li key={file.id}>
+                {file.file_name} ({file.category})
+              </li>
+            ))}
+          </ul>
         </div>
       )}
+    </div>
+      
     </div>
   );
 }
