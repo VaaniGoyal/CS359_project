@@ -1,7 +1,7 @@
 from fastapi import HTTPException, UploadFile, File, Depends, Query
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
-from db import db, fs, files_collection
+from db import db, fs, files_collection, users_collection
 from typing import List
 from models.file import File
 from utils.auth import verify_token
@@ -76,24 +76,39 @@ class FileController:
             raise HTTPException(status_code=404, detail="File not found")
 
     @staticmethod
-    async def search_files(name: str = None, category: str = None, uploaded_by: str = None) -> List[File]:
+    async def search_files(name: str = None, category: List[str] = None, username: str = None) -> List[dict]:
         query = {}
-
-        # Add filters to the query if parameters are provided
+        if username:
+            user = await users_collection.find_one({"username": username}, {"_id": 1})
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found.")
+            query["uploaded_by"] = str(user["_id"])  # Use the user_id in the query
         if name:
-            query["file_name"] = {"$regex": name, "$options": "i"}  # Case-insensitive search
+            query["file_name"] = {"$regex": name, "$options": "i"}  
         if category:
-            query["category"] = category
-        if uploaded_by:
-            query["uploaded_by"] = uploaded_by
+            query["category"] = {"$in": category}   
 
-        # # Perform the search with the constructed query
-        # files = await files_collection.find(query).sort("created_at", DESCENDING).to_list(length=100)  # Adjust `length` as needed
-        cursor = files_collection.find(query).sort("created_at", DESCENDING)
+        # Perform the search with the constructed query
+        cursor = files_collection.find(query, {"_id": 1, "file_name": 1, "uploaded_by": 1, "created_at": 1}).sort("created_at", -1)
+    
         files = await cursor.to_list(length=100)  # Adjust the length as needed
 
         if not files:
             raise HTTPException(status_code=404, detail="No files found matching the criteria.")
-            
-        # Convert results to a list of File objects
-        return [File(**{**file, "id": str(file["_id"])}) for file in files]
+    
+        # Prepare response data with the required fields
+        result = []
+        for file in files:
+            user = await users_collection.find_one({"_id": ObjectId(file["uploaded_by"])}, {"username": 1})
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found for uploaded_by id.")
+            category = file.get("category", "Unknown")
+            result.append({
+                "id": str(file["_id"]),  # Convert ObjectId to string for easy display
+                "file_name": file["file_name"],
+                "category": category,
+                "uploaded_by": user["username"],
+                "created_at": file["created_at"]
+            })
+    
+        return result

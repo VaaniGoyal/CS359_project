@@ -18,7 +18,7 @@ async def download_file(file_id: str):
 async def search_files(
     name: str = Query(None, description="Search files by name"),
     category: str = Query(None, description="Search files by type"),
-    uploaded_by: str = Query(None, description="Search files by user ID"),
+    username: str = Query(None, description="Search files by username"),
 ):
-    return await FileController.search_files(name=name, category=category, uploaded_by=uploaded_by)
+    return await FileController.search_files(name=name, category=category, username=username)
 
