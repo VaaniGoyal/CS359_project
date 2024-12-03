@@ -9,6 +9,8 @@ from datetime import datetime
 from pymongo import DESCENDING
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 import io
+import mimetypes
+import os
 
 class FileController:
     @staticmethod
@@ -27,13 +29,11 @@ class FileController:
         
             # Read the file content into memory (in case it's not too large)
             file_content = await file.read()
-            file_stream = io.BytesIO(file_content)  # Create an in-memory stream from file content
-        
-            # Upload file content to GridFS using upload_from_stream
+            file_stream = io.BytesIO(file_content)
             file_id = await bucket.upload_from_stream(file.filename, file_stream, metadata={
                 "category": category,
                 "uploaded_by": user_id,
-                "created_at": datetime.utcnow().isoformat()
+                "created_at": datetime.utcnow().isoformat(),
             })
         
             print(f"File uploaded to GridFS with ID: {file_id}")
@@ -56,46 +56,60 @@ class FileController:
             print(f"Error during file upload: {e}")
             raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
-
     @staticmethod
     async def download_file(file_id: str):
         try:
-            # Convert file_id string to ObjectId
+            # Convert the file_id to ObjectId
             file_id = ObjectId(file_id)
-            # Retrieve the file from GridFS
-            file = fs.get(file_id)
-        
-            # Stream the file to the client
-            return StreamingResponse(
-                file,
-                media_type="application/octet-stream",  # Generic binary stream type
-                headers={"Content-Disposition": f"attachment; filename={file.filename}"}
-            )
-        except Exception as e:
-            # Raise an HTTP 404 if the file isn't found
-            raise HTTPException(status_code=404, detail="File not found")
+            print(f"Trying to retrieve file with ID: {file_id}")
+            file_document = await files_collection.find_one({"_id": file_id})
+            if not file_document:
+                raise HTTPException(status_code=404, detail="File not found")
+            print(f"file document: {file_document}")
+            gridfs_file_id = file_document['file_id']
+            file_stream = await fs.open_download_stream(ObjectId(gridfs_file_id))
+            # print(f"file stream opened for file_id: {gridfs_file_id}")
+            # async def iterfile():
+            #     async for chunk in file_stream:
+            #         yield chunk
+            # await file_stream.open()
 
-    # 
-    
+            # Determine the file's MIME type (default to 'application/octet-stream' if unknown)
+            file_name = file_document["file_name"]
+            mime_type, _ = mimetypes.guess_type(file_name)
+            print(f"Detected MIME type: {mime_type}")
+            if not mime_type:
+                print("vaani")
+                mime_type = "application/octet-stream"
+
+            
+            # Return file as stream with the correct MIME type and filename
+            # return StreamingResponse(file_stream, media_type="application/octet-stream", headers={
+            #     "Content-Disposition": f"attachment; filename=\"{file_name}\"",
+            #     "Content-Type": mime_type
+            # })
+            return StreamingResponse(file_stream, media_type="png", headers={
+                "Content-Disposition": f"attachment; filename=\"testfile.png\""
+            })
+
+        except Exception as e:
+            raise HTTPException(status_code=404, detail=f"File not found: {str(e)}")
+
     @staticmethod
     async def search_files(name: str = None, category: List[str] = None, username: str = None) -> List[dict]:
         query = {}
-
+        # Add name filter if provided
+        if name:
+            query["file_name"] = {"$regex": name, "$options": "i"}  # Case-insensitive search
+        # Add category filter if provided (assuming category is a list of categories)
+        if category:
+            query["category"] = {"$in": category}  # Find documents where category matches any in the provided list
         # If username is provided, fetch the corresponding user_id
         if username:
             user = await users_collection.find_one({"username": username}, {"_id": 1})
             if not user:
                 raise HTTPException(status_code=404, detail="User not found.")
             query["uploaded_by"] = str(user["_id"])  # Filter by the uploaded_by user_id
-    
-        # Add name filter if provided
-        if name:
-            query["file_name"] = {"$regex": name, "$options": "i"}  # Case-insensitive search
-    
-        # Add category filter if provided (assuming category is a list of categories)
-        if category:
-            query["category"] = {"$in": category}  # Find documents where category matches any in the provided list
-
         # Perform the search with the constructed query
         cursor = files_collection.find(query, {"_id": 1, "file_name": 1, "category": 1, "uploaded_by": 1, "created_at": 1}).sort("created_at", -1)
 
@@ -116,10 +130,10 @@ class FileController:
         
             # Add file details to the result
             result.append({
-                "id": str(file["_id"]),  # Convert ObjectId to string
+                "id": str(file["_id"]),  
                 "file_name": file["file_name"],
                 "category": category,
-                "uploaded_by": user["username"],  # Use the username instead of user_id
+                "uploaded_by": user["username"],  
                 "created_at": file["created_at"]
             })
         return result

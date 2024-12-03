@@ -6,7 +6,7 @@ uri = "mongodb+srv://vaanigoyal:Vaani%4012345@networkdb.rbpnd.mongodb.net/?retry
 # Use AsyncIOMotorClient for asynchronous operations
 client = AsyncIOMotorClient(uri, server_api=ServerApi('1'))
 
-# Send a ping to confirm a successful connection
+    # Send a ping to confirm a successful connection
 try:
     client.admin.command('ping')
     print("Pinged your deployment. You successfully connected to MongoDB!")
@@ -17,6 +17,5 @@ except Exception as e:
 db = client.network
 users_collection = db.users
 files_collection = db.files
-
-# Initialize GridFS for file storage
+    # Initialize GridFS for file storage
 fs = AsyncIOMotorGridFSBucket(db)
