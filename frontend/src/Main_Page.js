@@ -111,6 +111,38 @@ function Main_Page() {
       console.error("Error downloading file:", error);
     });
   };
+  const handleDelete = async (fileId) => {
+    try {
+      const token = localStorage.getItem("token");
+  
+      if (!token) {
+        alert("User is not authenticated. Please log in.");
+        return;
+      }
+  
+      const response = await axios.delete(
+        `http://localhost:8000/api/files/delete/${fileId}`, // Correct URL without extra brace
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include JWT token in headers
+          },
+        }
+      );
+  
+      if (response.status === 200) {
+        alert("File deleted successfully.");
+        // Optionally, update UI to remove the deleted file
+        setSearchResults((prevResults) =>
+          prevResults.filter((file) => file.id !== fileId)
+        );
+      } else {
+        alert("Failed to delete the file. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error deleting file:", error.response?.data || error.message);
+      alert("Failed to delete the file.");
+    }
+  };
   
 
   return (
@@ -199,13 +231,14 @@ function Main_Page() {
       <tbody>
         {searchResults.map((file)=> (
           <tr key={file.id}>
-            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+            <td style={{ border: "1px solid #ddd", padding: "8px", width: "10px" }}>
               {file.file_name} ({file.category})
             </td>
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>{file.uploaded_by}</td>
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>{file.created_at}</td>
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-              <button onClick={() => handleDownload(file.id, file.file_name)}>Download</button>
+              <button style={{width: "65px"}} onClick={() => handleDownload(file.id, file.file_name)}>Download</button>
+              <button style={{width: "55px", marginLeft: "10px"}} onClick={() => handleDelete(file.id)}>Delete</button>
             </td>
           </tr>
         ))}
