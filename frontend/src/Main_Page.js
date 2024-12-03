@@ -95,29 +95,21 @@ function Main_Page() {
       alert("Failed to search for files.");
     }
   };
-  const handleDownload = async (fileId) => {
-    try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/files/download/${fileId}`, {
-        responseType: 'blob', // Ensure the response is treated as a file (binary data)
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const a = document.createElement('a');
-      a.href = url;
 
-      // Extract filename from Content-Disposition header
-      const contentDisposition = response.headers['content-disposition'];
-      const filename = contentDisposition
-        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-        : 'downloaded_file';
 
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (error) {
-      console.error("Error downloading file:", error.response?.data || error.message);
-      alert("Failed to download the file.");
-    }
+  const handleDownload = async (fileId, fileName) => {
+    fetch(`http://127.0.0.1:8000/api/files/download/${fileId}`)
+    .then(response => response.blob())  // Convert the response to a Blob
+    .then(blob => {
+      const filename = fileName;  // Get the filename (you can modify this based on server response)
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);  // Create a URL for the Blob
+      link.download = filename;  // Set the filename to be downloaded
+      link.click();  // Trigger the download
+    })
+    .catch(error => {
+      console.error("Error downloading file:", error);
+    });
   };
   
 
@@ -213,7 +205,7 @@ function Main_Page() {
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>{file.uploaded_by}</td>
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>{file.created_at}</td>
             <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-              <button onClick={() => handleDownload(file.id)}>Download</button>
+              <button onClick={() => handleDownload(file.id, file.file_name)}>Download</button>
             </td>
           </tr>
         ))}
