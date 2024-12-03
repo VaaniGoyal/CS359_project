@@ -10,7 +10,8 @@ class UserController:
     @staticmethod
     async def register_user(username: str, email: str, password: str):
         # Check if user already exists
-        if user_collection.find_one({"email": email}):
+        existing_user = await user_collection.find_one({"email": email})
+        if existing_user:
             raise HTTPException(status_code=400, detail="Email already registered")
         
         hashed_password = hash_password(password)
@@ -19,12 +20,13 @@ class UserController:
             "email": email,
             "password": hashed_password
         }
-        result = user_collection.insert_one(new_user)
+        result = await user_collection.insert_one(new_user)
         return {"message": "User created successfully", "user_id": str(result.inserted_id)}
 
     @staticmethod
     async def login_user(email: str, password: str):
-        user = user_collection.find_one({"email": email})
+         # Retrieve user from database
+        user = await user_collection.find_one({"email": email}) 
         if not user or not verify_password(password, user["password"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
