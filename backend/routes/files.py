@@ -17,7 +17,7 @@ async def download_file(file_id: str):
 @router.get("/search")
 async def search_files(
     name: str = Query(None, description="Search files by name"),
-    category: str = Query(None, description="Search files by type"),
+    category: list[str] = Query(None, description="Search files by category"),
     username: str = Query(None, description="Search files by username"),
 ):
     return await FileController.search_files(name=name, category=category, username=username)

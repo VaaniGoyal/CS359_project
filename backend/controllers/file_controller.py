@@ -75,40 +75,51 @@ class FileController:
             # Raise an HTTP 404 if the file isn't found
             raise HTTPException(status_code=404, detail="File not found")
 
+    # 
+    
     @staticmethod
     async def search_files(name: str = None, category: List[str] = None, username: str = None) -> List[dict]:
         query = {}
+
+        # If username is provided, fetch the corresponding user_id
         if username:
             user = await users_collection.find_one({"username": username}, {"_id": 1})
             if not user:
                 raise HTTPException(status_code=404, detail="User not found.")
-            query["uploaded_by"] = str(user["_id"])  # Use the user_id in the query
+            query["uploaded_by"] = str(user["_id"])  # Filter by the uploaded_by user_id
+    
+        # Add name filter if provided
         if name:
-            query["file_name"] = {"$regex": name, "$options": "i"}  
+            query["file_name"] = {"$regex": name, "$options": "i"}  # Case-insensitive search
+    
+        # Add category filter if provided (assuming category is a list of categories)
         if category:
-            query["category"] = {"$in": category}   
+            query["category"] = {"$in": category}  # Find documents where category matches any in the provided list
 
         # Perform the search with the constructed query
-        cursor = files_collection.find(query, {"_id": 1, "file_name": 1, "uploaded_by": 1, "created_at": 1}).sort("created_at", -1)
-    
-        files = await cursor.to_list(length=100)  # Adjust the length as needed
+        cursor = files_collection.find(query, {"_id": 1, "file_name": 1, "category": 1, "uploaded_by": 1, "created_at": 1}).sort("created_at", -1)
+
+        files = await cursor.to_list(length=100)  # Limit to 100 files, can adjust as needed
 
         if not files:
             raise HTTPException(status_code=404, detail="No files found matching the criteria.")
     
-        # Prepare response data with the required fields
+        # Prepare the response with the necessary fields
         result = []
         for file in files:
             user = await users_collection.find_one({"_id": ObjectId(file["uploaded_by"])}, {"username": 1})
             if not user:
                 raise HTTPException(status_code=404, detail="User not found for uploaded_by id.")
+        
+            # Safely get category, default to "Unknown" if missing
             category = file.get("category", "Unknown")
+        
+            # Add file details to the result
             result.append({
-                "id": str(file["_id"]),  # Convert ObjectId to string for easy display
+                "id": str(file["_id"]),  # Convert ObjectId to string
                 "file_name": file["file_name"],
                 "category": category,
-                "uploaded_by": user["username"],
+                "uploaded_by": user["username"],  # Use the username instead of user_id
                 "created_at": file["created_at"]
             })
-    
         return result
