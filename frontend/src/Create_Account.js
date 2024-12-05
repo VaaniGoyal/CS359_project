@@ -17,7 +17,7 @@ function Create_Account() {
         password: password,
       });
       localStorage.setItem("token", response.data.token);
-      navigate("/Main_Page"); 
+      navigate("/Login_Page"); 
     } catch (error) {
       if (error.response && error.response.data && error.response.data.detail) {
         setError(error.response.data.detail); 
