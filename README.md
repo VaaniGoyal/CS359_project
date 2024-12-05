@@ -51,7 +51,7 @@ Frontend: React, JavaScript
 Database: MongoDB Atlas
 
 ## **Author**
-Vaani Goyal (2201AI41)
+Vaani Goyal (2201AI41) ||
 Vaishika Agrawal (2201AI42)
 
 
